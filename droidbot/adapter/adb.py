@@ -362,3 +362,12 @@ class ADB(Adapter):
             encoded = str(text)
         # TODO find out which characters can be dangerous, and handle non-English characters
         self.shell("input text %s" % encoded)
+
+    def pull(self, remote_path, local_path):
+        """
+        Puxa arquivos do dispositivo para o computador
+        :param remote_path: caminho do arquivo no dispositivo
+        :param local_path: caminho local de destino
+        """
+        cmd = self.cmd_prefix + ["pull", remote_path, local_path]
+        return subprocess.check_output(cmd).decode("utf-8")

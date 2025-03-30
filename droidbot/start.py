@@ -6,7 +6,45 @@ from . import input_policy
 from . import env_manager
 from .droidbot import DroidBot
 from .droidmaster import DroidMaster
+import threading
+import sys
+import time
+from colorama import Fore, Style, init
 
+init(autoreset=True)
+
+def stop_droidbot_after_timeout(timeout):
+    """
+    Função que exibe um contador regressivo colorido e encerra o processo após o tempo.
+    """
+    def countdown_and_stop():
+        for remaining in range(timeout, 0, -1):
+            mins, secs = divmod(remaining, 60)
+            time_str = f"{mins:02d} min {secs:02d} seg"
+
+            # Definir cor baseado no tempo restante
+            if remaining <= 60:
+                color = Fore.RED  # Último minuto em vermelho
+            elif remaining <= 180:
+                color = Fore.YELLOW  # Últimos 3 minutos em amarelo
+            else:
+                color = Fore.GREEN  # Restante em verde
+
+            print(f"{color}Tempo restante: {time_str}{Style.RESET_ALL}")
+            time.sleep(1)
+
+        print(f"\n{Fore.RED}Tempo limite atingido, encerrando DroidBot...{Style.RESET_ALL}")
+
+        # Aqui a chamada elegante para parar o DroidBot:
+        droidbot = DroidBot.get_instance()
+        if droidbot:
+            droidbot.stop()  # <-- Encerra de forma correta
+        sys.exit(0)  # Encerra o processo
+
+    # Iniciar a contagem regressiva em uma thread separada
+    timer_thread = threading.Thread(target=countdown_and_stop)
+    timer_thread.daemon = True  # Thread como daemon, não segura o processo
+    timer_thread.start()
 
 def parse_args():
     """
@@ -100,6 +138,10 @@ def main():
     it starts a droidbot according to the arguments given in cmd line
     """
     opts = parse_args()
+    
+    if opts.timeout > 0:
+        stop_droidbot_after_timeout(opts.timeout)
+        
     import os
     if not os.path.exists(opts.apk_path):
         print("APK does not exist.")

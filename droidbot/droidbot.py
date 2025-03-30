@@ -44,7 +44,10 @@ class DroidBot(object):
                  master=None,
                  humanoid=None,
                  ignore_ad=False,
-                 replay_output=None):
+                 replay_output=None,
+                 plugins=None):
+
+        self.plugins = plugins if plugins is not None else []
         """
         initiate droidbot with configurations
         :return:
@@ -93,6 +96,10 @@ class DroidBot(object):
                 enable_accessibility_hard=self.enable_accessibility_hard,
                 humanoid=self.humanoid,
                 ignore_ad=ignore_ad)
+
+            for plugin in self.plugins:
+                plugin.on_device_ready(self.device)
+
             self.app = App(app_path, output_dir=self.output_dir)
 
             self.env_manager = AppEnvManager(

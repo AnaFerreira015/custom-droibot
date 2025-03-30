@@ -108,6 +108,11 @@ class InputManager(object):
                 break
         event_log.stop()
 
+        from droidbot.droidbot import DroidBot
+
+        for plugin in DroidBot.get_instance().plugins:
+            plugin.after_event(event, self.device.get_current_state())
+
     def start(self):
         """
         start sending event
@@ -160,6 +165,9 @@ class InputManager(object):
         """
         stop sending event
         """
+        self.enabled = False  # Desliga o input manager
+        if self.policy:
+            self.policy.stop()
         if self.monkey:
             if self.monkey.returncode is None:
                 self.monkey.terminate()

@@ -52,14 +52,16 @@ class InputPolicy(object):
         self.app = app
         self.action_count = 0
         self.master = None
+        self.enabled = True
 
     def start(self, input_manager):
         """
         start producing events
         :param input_manager: instance of InputManager
         """
+        self.input_manager = input_manager
         self.action_count = 0
-        while input_manager.enabled and self.action_count < input_manager.event_count:
+        while self.enabled and self.input_manager.enabled and self.action_count < self.input_manager.event_count:
             try:
                 # # make sure the first event is go to HOME screen
                 # # the second event is to start the app
@@ -95,6 +97,11 @@ class InputPolicy(object):
         """
         pass
 
+    def stop(self):
+        """
+        Método para parar a execução da policy
+        """
+        self.enabled = False
 
 class NoneInputPolicy(InputPolicy):
     """

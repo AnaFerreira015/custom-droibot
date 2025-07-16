@@ -1,4 +1,4 @@
-# # screen_capture_plugin.py
+# C:\Projetos\droidbot\plugins\screen_capture_plugin.py
 # import os
 # import time
 #

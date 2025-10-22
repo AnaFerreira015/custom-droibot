@@ -33,6 +33,7 @@ setup(
         'Pillow',
         'lxml',
         'uiautomator',
+        'uiautomator2',
         'numpy',
         'opencv-python'
     ],

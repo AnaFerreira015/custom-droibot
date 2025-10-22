@@ -1,4 +1,4 @@
-# screen_capture_plugin.py
+# ocr-test\droidbot\droidbot\plugins\screen_capture_plugin.py
 import os
 import json
 import time
@@ -26,37 +26,45 @@ class ScreenCapturePlugin(Plugin):
         self.device = device
 
     def after_event(self, event, state):
-        state_id = state.state_str  # identificador único da tela atual
-        print(f"[PLUGIN] Capturando tela '{state_id}' após evento: {event}")
+        state_id = state.state_str
+        print(f"[PLUGIN - Droidbot] Capturando tela '{state_id}' após evento: {event}")
 
-        # Nomes dos arquivos
         screen_filename = os.path.join(self.prints_dir, f"screen_{self.font_type}_{state_id}.png")
         xml_filename = os.path.join(self.xmls_dir, f"ui_dump_{self.font_type}_{state_id}.xml")
         state_filename = os.path.join(self.states_dir, f"state_{self.font_type}_{state_id}.json")
 
-        # 🔐 Filtra apenas os atributos serializáveis
         serializable_state = {
             k: v for k, v in state.__dict__.items()
             if isinstance(v, (str, int, float, list, dict, bool, type(None)))
         }
 
-        # ✅ Garante campos críticos
         serializable_state["state_str"] = state.state_str
         serializable_state["foreground_activity"] = getattr(state, "foreground_activity", "")
 
-        # Salva o JSON
+        print(f"[PLUGIN - Droidbot] Atividade atual: {serializable_state['foreground_activity']}")
+
         with open(state_filename, "w", encoding="utf-8") as f:
             json.dump(serializable_state, f, indent=2, ensure_ascii=False)
 
-        # Captura XML
-        self.device.adb.shell("uiautomator dump /sdcard/ui_dump.xml")
-        self.device.adb.pull("/sdcard/ui_dump.xml", xml_filename)
+        # FORÇA DELAY MAIOR para garantir que a UI atualizou
+        time.sleep(3)
 
-        # Captura screenshot
-        self.device.adb.shell("screencap -p /sdcard/screen.png")
-        self.device.adb.pull("/sdcard/screen.png", screen_filename)
+        temp_xml = f"/sdcard/ui_dump_{state_id}.xml"
+        temp_screen = f"/sdcard/screen_{state_id}.png"
 
-        print(f"[PLUGIN] Tela '{state_id}' capturada com sucesso.")
+        try:
+            self.device.adb.shell(f"uiautomator dump --compressed /sdcard/window_dump.xml")
+            self.device.adb.shell(f"mv /sdcard/window_dump.xml {temp_xml}")
+            self.device.adb.pull(temp_xml, xml_filename)
+            # self.device.adb.shell(f"rm {temp_xml}")
+        except Exception as e:
+            print(f"[PLUGIN - Droidbot] Erro ao capturar UI dump: {e}")
+
+        self.device.adb.shell(f"screencap -p {temp_screen}")
+        self.device.adb.pull(temp_screen, screen_filename)
+        # self.device.adb.shell(f"rm {temp_screen}")
+
+        print(f"[PLUGIN - Droidbot] Tela '{state_id}' capturada com sucesso.")
 
     def on_finish(self):
-        print("[PLUGIN] Plugin de captura finalizado.")
+        print("[PLUGIN - Droidbot] Plugin de captura finalizado.")

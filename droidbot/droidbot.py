@@ -9,10 +9,10 @@ import pkg_resources
 import shutil
 from threading import Timer
 
-from .device import Device
-from .app import App
-from .env_manager import AppEnvManager
-from .input_manager import InputManager
+from droidbot.device import Device
+from droidbot.app import App
+from droidbot.env_manager import AppEnvManager
+from droidbot.input_manager import InputManager
 
 
 class DroidBot(object):

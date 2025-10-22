@@ -1,4 +1,4 @@
-# # screen_capture_plugin.py
+# ocr-test\droidbot\plugins\screen_capture_plugin.py
 # import os
 # import time
 #

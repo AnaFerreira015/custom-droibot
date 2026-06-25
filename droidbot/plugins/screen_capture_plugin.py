@@ -9,9 +9,10 @@ class Plugin:
     def on_finish(self): pass
 
 class ScreenCapturePlugin(Plugin):
-    def __init__(self, output_dir, font_type):
+    def __init__(self, output_dir, font_type, target_package=None):
         self.output_dir = output_dir
         self.font_type = font_type
+        self.target_package = target_package
         self.device = None
 
         self.prints_dir = os.path.join(output_dir, "prints")

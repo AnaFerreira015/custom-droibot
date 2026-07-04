@@ -5,6 +5,7 @@ import random
 from abc import abstractmethod
 
 from .input_event import InputEvent, KeyEvent, IntentEvent, TouchEvent, ManualEvent, SetTextEvent, KillAppEvent
+from .intent import Intent
 from .utg import UTG
 
 # Max number of restarts
@@ -558,6 +559,25 @@ class UtgReplayPolicy(InputPolicy):
         self.event_paths = sorted([os.path.join(event_dir, x) for x in
                                    next(os.walk(event_dir))[2]
                                    if x.endswith(".json")])
+
+        # Indice {state_str: structure_str} dos estados gravados, para
+        # fallback de matching estrutural quando a tela tem texto dinamico
+        # (relogios, datas, contadores), que muda o state_str a cada execucao.
+        states_dir = os.path.join(replay_output, "states")
+        self.recorded_structure = {}
+        if os.path.isdir(states_dir):
+            for state_file in os.listdir(states_dir):
+                if not state_file.endswith(".json"):
+                    continue
+                try:
+                    with open(os.path.join(states_dir, state_file),
+                              encoding="utf-8") as f:
+                        s = json.load(f)
+                    structure = s.get("state_str_content_free")
+                    if structure: 
+                        self.recorded_structure[s.get("state_str")] = structure
+                except Exception:
+                    continue
         # skip HOME and start app intent
         self.device = device
         self.app = app
@@ -583,6 +603,13 @@ class UtgReplayPolicy(InputPolicy):
                 self.num_replay_tries = 0
                 return KeyEvent(name="BACK")
 
+            if not self.device.is_foreground(self.app):
+                component = self.app.get_package_name()
+                if self.app.get_main_activity():
+                    component += "/%s" % self.app.get_main_activity()
+                self.num_replay_tries = 0
+                return IntentEvent(Intent(suffix=component))
+
             curr_event_idx = self.event_idx
             self.__update_utg()
             while curr_event_idx < len(self.event_paths):
@@ -596,7 +623,10 @@ class UtgReplayPolicy(InputPolicy):
                         self.logger.info("Loading %s failed" % event_path)
                         continue
 
-                    if event_dict["start_state"] != current_state.state_str:
+                    recorded_start = event_dict["start_state"]
+                    if recorded_start != current_state.state_str and \
+                            self.recorded_structure.get(recorded_start) != \
+                            current_state.structure_str:
                         continue
                     if not self.device.is_foreground(self.app):
                         # if current app is in background, bring it to foreground
@@ -616,7 +646,7 @@ class UtgReplayPolicy(InputPolicy):
 
             time.sleep(5)
 
-        # raise InputInterruptedException("No more record can be replayed.")
+        raise InputInterruptedException("No more record can be replayed.")
     def __update_utg(self):
         self.utg.add_transition(self.last_event, self.last_state, self.current_state)
 

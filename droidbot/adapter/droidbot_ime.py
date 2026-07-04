@@ -53,7 +53,16 @@ class DroidBotIme(Adapter):
         self.device.uninstall_app(DROIDBOT_APP_PACKAGE)
 
     def connect(self):
-        r_enable = self.device.adb.shell("ime enable %s" % IME_SERVICE)
+        r_enable = ""
+        for attempt in range(5):
+            try:
+                r_enable = self.device.adb.shell("ime enable %s" % IME_SERVICE)
+            except Exception:
+                r_enable = ""
+            if "now enabled" in r_enable or "already enabled" in r_enable:
+                break
+            if attempt < 4:
+                time.sleep(3)
         if "now enabled" in r_enable or "already enabled" in r_enable:
             r_set = self.device.adb.shell("ime set %s" % IME_SERVICE)
             if f"{IME_SERVICE} selected" in r_set:

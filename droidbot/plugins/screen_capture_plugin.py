@@ -27,6 +27,14 @@ class ScreenCapturePlugin(Plugin):
         self.device = device
 
     def after_event(self, event, state):
+        if state is None:
+            return
+        foreground = getattr(state, "foreground_activity", None) or ""
+        if self.target_package and self.target_package not in foreground:
+            print(f"[PLUGIN - Droidbot] Ignorando tela fora do app: "
+                  f"{foreground or 'desconhecida'}")
+            return
+
         state_id = state.state_str
         print(f"[PLUGIN - Droidbot] Capturando tela '{state_id}' após evento: {event}")
 

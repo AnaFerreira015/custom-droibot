@@ -50,7 +50,8 @@ class AtfScanPlugin(Plugin):
         state_str = state.state_str
         structure = getattr(state, "structure_str", None) or state_str
         if structure in self.scanned:
-            return  # uma tela (estrutura) e escaneada uma unica vez
+            return
+        self.scanned.add(structure)
 
         # Espelha o is_app_screen do pipeline: ignora estados fora do app alvo
         foreground = getattr(state, "foreground_activity", None) or ""

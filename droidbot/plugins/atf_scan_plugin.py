@@ -13,11 +13,12 @@ DEVICE_SCANS_DIR = f"/sdcard/Android/data/{HARNESS_PKG}/files/scans"
 
 class AtfScanPlugin(Plugin):
     """Executa um scan do atf-harness (motor de checks do Accessibility
-    Scanner) apos cada evento do DroidBot, uma vez por estado unico.
+    Scanner) apos cada evento do DroidBot, uma vez por tela unica.
 
-    O stateId do scan e o state_str do DroidBot, entao os JSONs gerados
-    casam 1:1 com os estados reportados pelo a11y-argus (screen_id do
-    errors.json), dispensando heuristica de alinhamento no matching.
+    A deduplicacao usa o structure_str (assinatura estrutural, estavel
+    entre execucoes mesmo com texto dinamico); o arquivo de saida usa o
+    state_str, que casa com o screen_id do argus diretamente ou via
+    fallback estrutural no generate_state_map do replay.
 
     Requisitos: APKs do atf-harness instalados no device
     (installDebug installDebugAndroidTest).
@@ -47,21 +48,22 @@ class AtfScanPlugin(Plugin):
         if state is None or self.device is None:
             return
 
-        state_str = state.state_str
-        structure = getattr(state, "structure_str", None) or state_str
-        if structure in self.scanned:
-            return
-        self.scanned.add(structure)
-
-        # Espelha o is_app_screen do pipeline: ignora estados fora do app alvo
+        # Ignora estados fora do app alvo (espelha o is_app_screen do pipeline)
         foreground = getattr(state, "foreground_activity", None) or ""
         if self.target_package and self.target_package not in foreground:
             return
 
-        self.scanned.add(state_str)
+        state_str = state.state_str
+        structure = getattr(state, "structure_str", None) or state_str
+        if structure in self.scanned:
+            return  # uma tela (estrutura) e escaneada uma unica vez
+        self.scanned.add(structure)
+
         print(f"[ATF_PLUGIN] Scan do estado {state_str[:12]}... "
               f"({len(self.scanned)} estados)")
-        # Salva o estado do droidbot junto do scan (rastreabilidade/diagnostico)
+
+        # Salva o estado do droidbot junto do scan (rastreabilidade e insumo
+        # do mapeamento estrutural no generate_state_map)
         try:
             with open(os.path.join(self.output_dir, f"{state_str}.state.json"),
                       "w", encoding="utf-8") as f:
